@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model VisitorLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  
+  // System Info
+  systemId  String?
+
+  // Network Identity
+  ip        String?
+  isp       String?
+  org       String?
+  asn       String?
+  mobile    String?
+  proxy     String?
+  hosting   String?
+
+  // Geolocation
+  city      String?
+  region    String?
+  country   String?
+  lat       Float?
+  lon       Float?
+  timezone  String?
+
+  // Device / Browser (Allowed fields)
+  browser   String?
+  os        String?
+  cpuArch   String? // Architecture is usually okay (e.g. arm64), but "cores" was explicitly banned.
+  deviceType String?
+  
+  // Connection
+  connectionType String?
+}

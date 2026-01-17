@@ -47,6 +47,9 @@ body {
   width: 100%;
   max-width: 600px;
   animation: float 6s ease-in-out infinite;
+  /* Ensure text doesn't overflow horizontally */
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 .title {
@@ -73,6 +76,8 @@ body {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: transform 0.2s, background 0.2s;
+  /* Prevent horizontal scroll */
+  max-width: 100%;
 }
 
 .data-item:hover {
@@ -93,6 +98,17 @@ body {
   font-size: 1.2rem;
   font-weight: 500;
   color: white;
+}
+
+/* IP Text Class (Added for responsive control) */
+.ip-text {
+  font-size: clamp(2rem, 8vw, 3rem);
+  /* Responsive Font Size */
+  font-weight: bold;
+  font-family: var(--font-geist-mono);
+  color: var(--primary);
+  text-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+  line-height: 1.1;
 }
 
 .loader {
@@ -173,4 +189,45 @@ body {
 .relative {
   position: relative;
   overflow: hidden;
+}
+
+/* --- MOBILE RESPONSIVENESS OVERRIDES --- */
+@media (max-width: 768px) {
+  .container {
+    padding: 0;
+    /* Remove padding around the container */
+    justify-content: flex-start;
+    /* Start from top */
+  }
+
+  .glass-panel {
+    border-radius: 0;
+    /* Square edges */
+    border: none;
+    /* Remove border */
+    border-top: 1px solid var(--glass-border);
+    /* Keep top border if aesthetic */
+    background: rgba(0, 0, 0, 0.4);
+    /* Darker on mobile for readability */
+    box-shadow: none;
+    min-height: 100vh;
+    /* Fill full height */
+    padding: 1.5rem;
+    /* Reduce padding inside panel */
+    animation: none;
+    /* Disable floating on mobile */
+    max-width: 100%;
+    /* Ensure full width */
+  }
+
+  .title {
+    font-size: 2rem;
+    margin-top: 1rem;
+  }
+
+  /* Make grid single column on very small screens if needed, 
+     but minmax(200px) usually handles it. */
+  .data-grid {
+    gap: 1rem;
+  }
 }

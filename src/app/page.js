@@ -152,7 +152,7 @@ export default function Home() {
           <div className="content">
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <span className="label">Observed IP Address</span>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', fontFamily: 'var(--font-geist-mono)', color: 'var(--primary)', textShadow: '0 0 20px rgba(0,255,157,0.3)' }}>
+              <div className="ip-text">
                 {data?.ip || 'UNKNOWN'}
               </div>
 

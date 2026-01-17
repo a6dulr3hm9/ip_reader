@@ -15,10 +15,14 @@ export async function POST(request) {
             },
         });
 
+        const host = request.headers.get('host');
+        const protocol = request.headers.get('x-forwarded-proto') || 'http';
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
+
         return NextResponse.json({
             success: true,
             linkId: sharedLink.id,
-            url: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/?sid=${sharedLink.id}`
+            url: `${baseUrl}/?sid=${sharedLink.id}`
         });
 
     } catch (error) {

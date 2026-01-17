@@ -306,3 +306,16 @@ body {
     width: 100%;
   }
 }
+
+/* Blur Effect */
+.blurred {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: filter 0.5s ease, opacity 0.5s ease;
+}
+
+.blurred-container {
+  position: relative;
+}

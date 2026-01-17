@@ -29,7 +29,9 @@ export async function POST(request) {
             browser, os, cpuArch, deviceType,
             connectionType,
             linkId,
-            visitorEmail // Optional lead capture
+            visitorEmail,
+            visitorPhone,
+            platformUser
         } = body;
 
         const log = await prisma.visitorLog.create({
@@ -41,7 +43,9 @@ export async function POST(request) {
                 connectionType,
                 linkId: linkId || null,
                 platform,
-                visitorEmail: visitorEmail || null
+                visitorEmail: visitorEmail || null,
+                visitorPhone: visitorPhone || null,
+                platformUser: platformUser || null
             },
             include: {
                 link: true

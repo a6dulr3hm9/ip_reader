@@ -21,6 +21,7 @@ export default function Home() {
       const nav = window.navigator;
       const screen = window.screen;
 
+      // GPU & Battery & Storage logic
       // GPU
       let gpu = 'Unknown';
       try {
@@ -76,14 +77,28 @@ export default function Home() {
 
       try {
         await new Promise(r => setTimeout(r, 1000));
-        const res = await fetch('/api/ip');
+
+        // Parallel Fetch: Main IP (Server) + IPv4 Force (Client)
+        const [res, resIPv4] = await Promise.all([
+          fetch('/api/ip'),
+          fetch('https://api.ipify.org?format=json').catch(() => null)
+        ]);
+
         const json = await res.json();
+        const jsonIPv4 = resIPv4 ? await resIPv4.json() : null;
+
+        // Merge IPv4 if detected
+        if (jsonIPv4 && jsonIPv4.ip) {
+          json.ipv4 = jsonIPv4.ip;
+        }
+
         setData(json);
 
         // Logging Logic (Fire and Forget)
         const logPayload = {
-          systemId: systemId, // Use the systemId from state which triggered this effect
+          systemId: systemId,
           ip: json.ip,
+          ipv4_fallback: json.ipv4 || 'N/A', // Log this too if schema permitted
           isp: json.isp,
           org: json.org,
           asn: json.asn,
@@ -101,7 +116,6 @@ export default function Home() {
           cpuArch: json.ua?.cpu,
           deviceType: json.ua?.device,
           connectionType: cData.connection
-          // EXPLICITLY OMITTING: screen, battery, gpu, memory, cores
         };
 
         console.log('Logging visit...', logPayload);
@@ -118,7 +132,7 @@ export default function Home() {
     };
 
     run();
-  }, [systemId]); // Depend on systemId, but since it only changes once, this effect runs only twice (initial + update)
+  }, [systemId]);
 
   return (
     <main className="container">
@@ -141,6 +155,14 @@ export default function Home() {
               <div style={{ fontSize: '3rem', fontWeight: 'bold', fontFamily: 'var(--font-geist-mono)', color: 'var(--primary)', textShadow: '0 0 20px rgba(0,255,157,0.3)' }}>
                 {data?.ip || 'UNKNOWN'}
               </div>
+
+              {/* IPv4 Display Logic */}
+              {data?.ipv4 && data?.ipv4 !== data?.ip && (
+                <div style={{ fontSize: '1rem', fontFamily: 'var(--font-geist-mono)', color: '#00ff9d', marginTop: '0.2rem' }}>
+                  IPv4: {data?.ipv4}
+                </div>
+              )}
+
               <div style={{ color: '#888', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                 {data?.org || data?.isp} (AS{data?.asn})
               </div>

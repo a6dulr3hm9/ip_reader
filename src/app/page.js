@@ -231,17 +231,19 @@ export default function Home() {
       <div className="glass-panel relative" style={{ maxWidth: '800px' }}>
         <div className="scan-line"></div>
 
-        <h1 className="title">IP Profiler <span style={{ fontSize: '1rem', verticalAlign: 'middle', background: 'var(--primary)', color: 'black', padding: '2px 8px', borderRadius: '4px' }}>MAX</span></h1>
+        <h1 className="title">
+          IP Profiler <span style={{ fontSize: '1rem', verticalAlign: 'middle', background: 'var(--primary)', color: 'black', padding: '2px 8px', borderRadius: '4px' }}>MAX</span>
+        </h1>
 
         {loading ? (
-          <div>
+          <div key="loading">
             <div className="loader"></div>
             <p style={{ textAlign: 'center', fontFamily: 'var(--font-geist-mono)', color: '#888' }}>
               EXTRACTING DEEP SYSTEM METRICS...
             </p>
           </div>
         ) : (
-          <div className="content">
+          <div key="loaded" className="content">
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <span className="label">Observed IP Address</span>
               <div className="ip-text">
@@ -383,66 +385,65 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
 
-
-              {/* SEGMENT 5: BROADCAST INTELLIGENCE (SHARE) */}
-        <div className="section-title">Broadcast Intelligence (Share)</div>
-        <div className="share-section">
-          <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
-            Generate a masked tracking link and share it directly to social platforms.
-          </p>
-          {!generatedLink ? (
-            <form onSubmit={handleGenerateLink} style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="email"
-                placeholder="Alert destination (optional)"
-                value={senderEmail}
-                onChange={(e) => setSenderEmail(e.target.value)}
-                className="share-input"
-              />
-              <button type="submit" className="share-button" disabled={isGenerating}>
-                {isGenerating ? 'LOCKING...' : 'GENERATE TRACKING LINK'}
-              </button>
-            </form>
-          ) : (
-            <div className="generated-link-box" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-              <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '10px' }}>BROADCAST LINK ACTIVE:</div>
-
-              <div className="social-share-group">
-                <button onClick={shareWhatsApp} className="social-button whatsapp">
-                  Share to WhatsApp
-                </button>
-                <button onClick={() => {
-                  navigator.clipboard.writeText(generatedLink);
-                  alert('Link copied! Share it on Instagram DM.');
-                }} className="social-button instagram">
-                  Share to Instagram
-                </button>
-                <button onClick={shareX} className="social-button x">
-                  Share to X
-                </button>
-                <button onClick={() => {
-                  navigator.clipboard.writeText(generatedLink);
-                  alert('Copied to clipboard!');
-                }} className="social-button copy">
-                  Copy Link
-                </button>
-              </div>
-
-              <p style={{ fontSize: '0.65rem', color: '#555', marginTop: '12px' }}>
-                Tracking is active. Alerts are locked until visitor consent.
-              </p>
+            <div className="section-title">
+              Broadcast Intelligence (Share)
             </div>
-          )}
-        </div>
+            <div className="share-section">
+              <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
+                Generate a masked tracking link and share it directly to social platforms.
+              </p>
+              {!generatedLink ? (
+                <form onSubmit={handleGenerateLink} style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="email"
+                    placeholder="Alert destination (optional)"
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                    className="share-input"
+                  />
+                  <button type="submit" className="share-button" disabled={isGenerating}>
+                    {isGenerating ? 'LOCKING...' : 'GENERATE TRACKING LINK'}
+                  </button>
+                </form>
+              ) : (
+                <div className="generated-link-box" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '10px' }}>BROADCAST LINK ACTIVE:</div>
 
-        <div style={{ marginTop: '3rem', textAlign: 'center', fontSize: '0.8rem', color: '#444', borderTop: '1px solid #222', paddingTop: '1rem' }}>
-          SYSTEM ID: {systemId} | {linkId ? `TRACKING ACTIVE: ${linkId}` : 'SESSION: ENCRYPTED'}
-        </div>
-      </div>
+                  <div className="social-share-group">
+                    <button onClick={shareWhatsApp} className="social-button whatsapp">
+                      Share to WhatsApp
+                    </button>
+                    <button onClick={() => {
+                      navigator.clipboard.writeText(generatedLink);
+                      alert('Link copied! Share it on Instagram DM.');
+                    }} className="social-button instagram">
+                      Share to Instagram
+                    </button>
+                    <button onClick={shareX} className="social-button x">
+                      Share to X
+                    </button>
+                    <button onClick={() => {
+                      navigator.clipboard.writeText(generatedLink);
+                      alert('Copied to clipboard!');
+                    }} className="social-button copy">
+                      Copy Link
+                    </button>
+                  </div>
+
+                  <p style={{ fontSize: '0.65rem', color: '#555', marginTop: '12px' }}>
+                    Tracking is active. Alerts are locked until visitor consent.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginTop: '3rem', textAlign: 'center', fontSize: '0.8rem', color: '#444', borderTop: '1px solid #222', paddingTop: '1rem' }}>
+              SYSTEM ID: {systemId} | {linkId ? `TRACKING ACTIVE: ${linkId}` : 'SESSION: ENCRYPTED'}
+            </div>
+          </div>
         )}
-    </div>
-    </main >
+      </div>
+    </main>
   );
 }

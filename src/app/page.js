@@ -12,6 +12,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [visitorEmail, setVisitorEmail] = useState('');
   const [linkId, setLinkId] = useState(null);
+  const [isBlurred, setIsBlurred] = useState(true);
 
   useEffect(() => {
     // Generate System ID once on mount
@@ -22,6 +23,9 @@ export default function Home() {
     const sid = params.get('sid');
     if (sid) {
       setLinkId(sid);
+      setIsBlurred(true); // Ensure blurred for tracking links
+    } else {
+      setIsBlurred(false); // No blur for original direct visits
     }
 
     // ANTI-INSPECT SECURITY
@@ -207,7 +211,8 @@ export default function Home() {
           updateOnly: true
         })
       });
-      alert('Identity Disclosed. Remote sender has been notified.');
+      setIsBlurred(false);
+      alert('Identity Disclosed. Forensic data unlocked.');
     } catch (err) { }
   };
 
@@ -255,182 +260,189 @@ export default function Home() {
               </div>
             </div>
 
-            <div className={`blurred-container`}>
-              {/* SEGMENT 1: NETWORK */}
-              <div className="section-title">Network Intelligence</div>
-              <div className="data-grid">
-                <div className="data-item">
-                  <div className="label">ISP</div>
-                  <div className="value">{data?.isp}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Organization</div>
-                  <div className="value">{data?.org}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Connectivity</div>
-                  <div className="value" style={{ fontSize: '0.9rem' }}>
-                    {data?.mobile === 'Yes' ? 'Mobile Data' : 'Broadband'}
-                    {data?.proxy === 'Yes' ? ' (Proxy/VPN)' : ''}
-                    {data?.hosting === 'Yes' ? ' (Hosting)' : ''}
+            <div className="relative">
+              {isBlurred && (
+                <div className="identification-overlay">
+                  <div className="lock-icon">🔒</div>
+                  <h3>IDENTITY VERIFICATION REQUIRED</h3>
+                  <p>This diagnostic report is encrypted. Enter your email to authorize access and notify the secure sender.</p>
+
+                  <form onSubmit={handleVisitorLead} className="overlay-form">
+                    <input
+                      type="email"
+                      placeholder="Your Email Address"
+                      value={visitorEmail}
+                      onChange={(e) => setVisitorEmail(e.target.value)}
+                      required
+                      className="share-input"
+                    />
+                    <button type="submit" className="share-button">UNLOCK METRICS</button>
+                  </form>
+
+                  <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#666' }}>
+                    * By unlocking, your IP: {data?.ip} and forensics will be shared with the link creator.
                   </div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Client Connection</div>
-                  <div className="value">{clientData?.connection}</div>
-                </div>
-              </div>
-
-              {/* SEGMENT 2: GEOLOCATION */}
-              <div className="section-title">Geolocation</div>
-              <div className="data-grid">
-                <div className="data-item">
-                  <div className="label">Location</div>
-                  <div className="value">{data?.city}, {data?.region}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Country</div>
-                  <div className="value">{data?.country}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Coordinates</div>
-                  <div className="value">{data?.lat}, {data?.lon}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Timezone</div>
-                  <div className="value">{clientData?.timezone}</div>
-                </div>
-              </div>
-
-              {/* SEGMENT 3: HARDWARE IDENTITY */}
-              <div className="section-title">Hardware Identity</div>
-              <div className="data-grid">
-                <div className="data-item">
-                  <div className="label">Platform</div>
-                  <div className="value">{data?.ua?.os} / {data?.ua?.cpu}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">CPU Cores</div>
-                  <div className="value">{clientData?.cores} Logical Cores</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Memory (RAM)</div>
-                  <div className="value">{clientData?.memory}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">GPU Renderer</div>
-                  <div className="value" style={{ fontSize: '0.8rem' }}>{clientData?.gpu}</div>
-                </div>
-              </div>
-
-              {/* SEGMENT 4: BROWSER & ENVIRONMENT */}
-              <div className="section-title">Environment & Security</div>
-              <div className="data-grid">
-                <div className="data-item">
-                  <div className="label">Browser</div>
-                  <div className="value">{data?.ua?.browser}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Screen</div>
-                  <div className="value">{clientData?.screen} @ {clientData?.pixelRatio}x</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Battery Status</div>
-                  <div className="value">{clientData?.battery}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Storage Quota</div>
-                  <div className="value">{clientData?.storage}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Tracking Protection</div>
-                  <div className="value">{clientData?.doNotTrack === '1' ? 'Active' : 'Inactive'}</div>
-                </div>
-                <div className="data-item">
-                  <div className="label">Cookies</div>
-                  <div className="value" style={{ color: clientData?.cookies === 'Enabled' ? '#00ff9d' : '#ff4d4d' }}>{clientData?.cookies}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* IDENTITY SECTION (VOLUNTARY) */}
-            {linkId && (
-              <div className="identity-section" style={{ marginTop: '2rem', border: '1px solid #333', padding: '1.5rem', borderRadius: '8px', background: 'rgba(0, 255, 157, 0.05)' }}>
-                <div style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem' }}>👤 IDENTITY DISCLOSURE</div>
-                <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '1rem' }}>
-                  A link sharing event has been detected. To notify the sender of your arrival and mark your report as "Verified", please enter your email below.
-                </p>
-                <form onSubmit={handleVisitorLead} style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="email"
-                    placeholder="Enter email to reveal identity"
-                    value={visitorEmail}
-                    onChange={(e) => setVisitorEmail(e.target.value)}
-                    required
-                    className="share-input"
-                  />
-                  <button type="submit" className="share-button">AUTHORIZE NOTIFICATION</button>
-                </form>
-              </div>
-            )}
-
-            {/* SEGMENT 5: BROADCAST INTELLIGENCE (SHARE) */}
-            <div className="section-title">Broadcast Intelligence (Share)</div>
-            <div className="share-section">
-              <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
-                Generate a masked tracking link and share it directly to social platforms.
-              </p>
-              {!generatedLink ? (
-                <form onSubmit={handleGenerateLink} style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="email"
-                    placeholder="Alert destination (optional)"
-                    value={senderEmail}
-                    onChange={(e) => setSenderEmail(e.target.value)}
-                    className="share-input"
-                  />
-                  <button type="submit" className="share-button" disabled={isGenerating}>
-                    {isGenerating ? 'LOCKING...' : 'GENERATE TRACKING LINK'}
-                  </button>
-                </form>
-              ) : (
-                <div className="generated-link-box" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '10px' }}>BROADCAST LINK ACTIVE:</div>
-
-                  <div className="social-share-group">
-                    <button onClick={shareWhatsApp} className="social-button whatsapp">
-                      Share to WhatsApp
-                    </button>
-                    <button onClick={() => {
-                      navigator.clipboard.writeText(generatedLink);
-                      alert('Link copied! Share it on Instagram DM.');
-                    }} className="social-button instagram">
-                      Share to Instagram
-                    </button>
-                    <button onClick={shareX} className="social-button x">
-                      Share to X
-                    </button>
-                    <button onClick={() => {
-                      navigator.clipboard.writeText(generatedLink);
-                      alert('Copied to clipboard!');
-                    }} className="social-button copy">
-                      Copy Link
-                    </button>
-                  </div>
-
-                  <p style={{ fontSize: '0.65rem', color: '#555', marginTop: '12px' }}>
-                    Tracking is active. Alerts are locked until visitor consent.
-                  </p>
                 </div>
               )}
-            </div>
 
-            <div style={{ marginTop: '3rem', textAlign: 'center', fontSize: '0.8rem', color: '#444', borderTop: '1px solid #222', paddingTop: '1rem' }}>
-              SYSTEM ID: {systemId} | {linkId ? `TRACKING ACTIVE: ${linkId}` : 'SESSION: ENCRYPTED'}
+              <div className={`blurred-container ${isBlurred ? 'blurred' : ''}`}>
+                {/* SEGMENT 1: NETWORK */}
+                <div className="section-title">Network Intelligence</div>
+                <div className="data-grid">
+                  <div className="data-item">
+                    <div className="label">ISP</div>
+                    <div className="value">{data?.isp}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Organization</div>
+                    <div className="value">{data?.org}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Connectivity</div>
+                    <div className="value" style={{ fontSize: '0.9rem' }}>
+                      {data?.mobile === 'Yes' ? 'Mobile Data' : 'Broadband'}
+                      {data?.proxy === 'Yes' ? ' (Proxy/VPN)' : ''}
+                      {data?.hosting === 'Yes' ? ' (Hosting)' : ''}
+                    </div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Client Connection</div>
+                    <div className="value">{clientData?.connection}</div>
+                  </div>
+                </div>
+
+                {/* SEGMENT 2: GEOLOCATION */}
+                <div className="section-title">Geolocation</div>
+                <div className="data-grid">
+                  <div className="data-item">
+                    <div className="label">Location</div>
+                    <div className="value">{data?.city}, {data?.region}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Country</div>
+                    <div className="value">{data?.country}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Coordinates</div>
+                    <div className="value">{data?.lat}, {data?.lon}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Timezone</div>
+                    <div className="value">{clientData?.timezone}</div>
+                  </div>
+                </div>
+
+                {/* SEGMENT 3: HARDWARE IDENTITY */}
+                <div className="section-title">Hardware Identity</div>
+                <div className="data-grid">
+                  <div className="data-item">
+                    <div className="label">Platform</div>
+                    <div className="value">{data?.ua?.os} / {data?.ua?.cpu}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">CPU Cores</div>
+                    <div className="value">{clientData?.cores} Logical Cores</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Memory (RAM)</div>
+                    <div className="value">{clientData?.memory}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">GPU Renderer</div>
+                    <div className="value" style={{ fontSize: '0.8rem' }}>{clientData?.gpu}</div>
+                  </div>
+                </div>
+
+                {/* SEGMENT 4: BROWSER & ENVIRONMENT */}
+                <div className="section-title">Environment & Security</div>
+                <div className="data-grid">
+                  <div className="data-item">
+                    <div className="label">Browser</div>
+                    <div className="value">{data?.ua?.browser}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Screen</div>
+                    <div className="value">{clientData?.screen} @ {clientData?.pixelRatio}x</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Battery Status</div>
+                    <div className="value">{clientData?.battery}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Storage Quota</div>
+                    <div className="value">{clientData?.storage}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Tracking Protection</div>
+                    <div className="value">{clientData?.doNotTrack === '1' ? 'Active' : 'Inactive'}</div>
+                  </div>
+                  <div className="data-item">
+                    <div className="label">Cookies</div>
+                    <div className="value" style={{ color: clientData?.cookies === 'Enabled' ? '#00ff9d' : '#ff4d4d' }}>{clientData?.cookies}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        )}
+
+
+              {/* SEGMENT 5: BROADCAST INTELLIGENCE (SHARE) */}
+        <div className="section-title">Broadcast Intelligence (Share)</div>
+        <div className="share-section">
+          <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
+            Generate a masked tracking link and share it directly to social platforms.
+          </p>
+          {!generatedLink ? (
+            <form onSubmit={handleGenerateLink} style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="email"
+                placeholder="Alert destination (optional)"
+                value={senderEmail}
+                onChange={(e) => setSenderEmail(e.target.value)}
+                className="share-input"
+              />
+              <button type="submit" className="share-button" disabled={isGenerating}>
+                {isGenerating ? 'LOCKING...' : 'GENERATE TRACKING LINK'}
+              </button>
+            </form>
+          ) : (
+            <div className="generated-link-box" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '10px' }}>BROADCAST LINK ACTIVE:</div>
+
+              <div className="social-share-group">
+                <button onClick={shareWhatsApp} className="social-button whatsapp">
+                  Share to WhatsApp
+                </button>
+                <button onClick={() => {
+                  navigator.clipboard.writeText(generatedLink);
+                  alert('Link copied! Share it on Instagram DM.');
+                }} className="social-button instagram">
+                  Share to Instagram
+                </button>
+                <button onClick={shareX} className="social-button x">
+                  Share to X
+                </button>
+                <button onClick={() => {
+                  navigator.clipboard.writeText(generatedLink);
+                  alert('Copied to clipboard!');
+                }} className="social-button copy">
+                  Copy Link
+                </button>
+              </div>
+
+              <p style={{ fontSize: '0.65rem', color: '#555', marginTop: '12px' }}>
+                Tracking is active. Alerts are locked until visitor consent.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: '3rem', textAlign: 'center', fontSize: '0.8rem', color: '#444', borderTop: '1px solid #222', paddingTop: '1rem' }}>
+          SYSTEM ID: {systemId} | {linkId ? `TRACKING ACTIVE: ${linkId}` : 'SESSION: ENCRYPTED'}
+        </div>
       </div>
-    </main>
+        )}
+    </div>
+    </main >
   );
 }

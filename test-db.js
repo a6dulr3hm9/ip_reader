@@ -3,10 +3,12 @@ const { PrismaClient } = require('@prisma/client');
 
 
 async function test() {
-    console.log("--- Testing EMPTY constructor ---");
-    // Ensure ENV is set
-    process.env.DATABASE_URL = 'file:./dev.db';
-    console.log("ENV SET: ", process.env.DATABASE_URL);
+    console.log("--- Testing Connection ---");
+    // Use existing DATABASE_URL from .env if available, fallback to sqlite for local tests
+    if (!process.env.DATABASE_URL) {
+        process.env.DATABASE_URL = 'file:./dev.db';
+    }
+    console.log("USING DATABASE_URL: ", process.env.DATABASE_URL);
 
     try {
         const p1 = new PrismaClient();

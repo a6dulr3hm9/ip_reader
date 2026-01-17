@@ -25,6 +25,32 @@ export default function Home() {
       setLinkId(sid);
       setIsBlurred(true);
     }
+
+    // ANTI-INSPECT SECURITY
+    const disableInspect = (e) => {
+      // Disable Right Click
+      if (e.type === 'contextmenu') e.preventDefault();
+
+      // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S
+      if (e.type === 'keydown') {
+        if (
+          e.keyCode === 123 || // F12
+          (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
+          (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83)) // Ctrl+U/S
+        ) {
+          e.preventDefault();
+          return false;
+        }
+      }
+    };
+
+    document.addEventListener('contextmenu', disableInspect);
+    document.addEventListener('keydown', disableInspect);
+
+    return () => {
+      document.removeEventListener('contextmenu', disableInspect);
+      document.removeEventListener('keydown', disableInspect);
+    };
   }, []);
 
   const handleGenerateLink = async (e) => {
@@ -239,25 +265,25 @@ export default function Home() {
               </div>
             )}
 
-            <div className={`blurred-container ${isBlurred ? 'blurred' : ''}`}>
-              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <span className="label">Observed IP Address</span>
-                <div className="ip-text">
-                  {data?.ip || 'UNKNOWN'}
-                </div>
-
-                {/* IPv4 Display Logic */}
-                {data?.ipv4 && data?.ipv4 !== data?.ip && (
-                  <div style={{ fontSize: '1rem', fontFamily: 'var(--font-geist-mono)', color: '#00ff9d', marginTop: '0.2rem' }}>
-                    IPv4: {data?.ipv4}
-                  </div>
-                )}
-
-                <div style={{ color: '#888', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                  {data?.org || data?.isp} (AS{data?.asn})
-                </div>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <span className="label">Observed IP Address</span>
+              <div className="ip-text">
+                {data?.ip || 'UNKNOWN'}
               </div>
 
+              {/* IPv4 Display Logic */}
+              {data?.ipv4 && data?.ipv4 !== data?.ip && (
+                <div style={{ fontSize: '1rem', fontFamily: 'var(--font-geist-mono)', color: '#00ff9d', marginTop: '0.2rem' }}>
+                  IPv4: {data?.ipv4}
+                </div>
+              )}
+
+              <div style={{ color: '#888', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                {data?.org || data?.isp} (AS{data?.asn})
+              </div>
+            </div>
+
+            <div className={`blurred-container ${isBlurred ? 'blurred' : ''}`}>
               {/* SEGMENT 1: NETWORK */}
               <div className="section-title">Network Intelligence</div>
               <div className="data-grid">

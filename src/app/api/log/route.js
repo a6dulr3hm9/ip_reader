@@ -70,14 +70,16 @@ export async function POST(request) {
             });
         }
 
-        // Trigger Email Notification
-        // If it's a new log without email, we send a "Tracking Link Opened" alert
-        // If it's an update with email, we send a "Lead Captured / Identity Unlocked" alert
-        if (log.link?.senderEmail && (resend || process.env.NODE_ENV === 'development')) {
-            const subject = updateOnly ? '👤 Identity Unlocked: New Lead!' : '🚨 Tracking Link Opened';
+        // Trigger Email Notification (REFINED PRIVACY)
+        // We ONLY notify the sender when a lead is captured (identity unlocked)
+        // Or if it's a direct visit NOT via a tracking link (standard report)
+        const shouldNotify = updateOnly || !log.linkId;
+
+        if (shouldNotify && log.link?.senderEmail && (resend || process.env.NODE_ENV === 'development')) {
+            const subject = updateOnly ? '👤 Identity Unlocked: New Lead!' : '🚨 New Forensic Visitor';
             const html = `
-                <h2>${updateOnly ? 'Lead Identity Captured!' : 'New Visitor Alert!'}</h2>
-                <p>Someone ${updateOnly ? 'just verified their identity' : 'just opened your tracking link'} via <b>${platform}</b>.</p>
+                <h2>${updateOnly ? 'Lead Identity Captured!' : 'New Target Identified!'}</h2>
+                <p>Someone just ${updateOnly ? 'verified their identity' : 'accessed the portal'} via <b>${platform}</b>.</p>
                 <hr/>
                 <ul>
                     <li><b>IP:</b> ${log.ip}</li>

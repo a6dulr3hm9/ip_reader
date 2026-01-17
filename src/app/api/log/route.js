@@ -70,10 +70,11 @@ export async function POST(request) {
             });
         }
 
-        // Trigger Email Notification (REFINED PRIVACY)
-        // We ONLY notify the sender when a lead is captured (identity unlocked)
-        // Or if it's a direct visit NOT via a tracking link (standard report)
-        const shouldNotify = updateOnly || !log.linkId;
+        // Trigger Email Notification (STRICT PRIVACY LOCK)
+        // 1. If it's a tracking link (linkId exists), ONLY notify on updateOnly (Identity Unlock).
+        // 2. If it's NOT a tracking link (direct visit), notify standardly.
+        const isTrackingLink = !!log.linkId;
+        const shouldNotify = isTrackingLink ? updateOnly : true;
 
         if (shouldNotify && log.link?.senderEmail && (resend || process.env.NODE_ENV === 'development')) {
             const subject = updateOnly ? '👤 Identity Unlocked: New Lead!' : '🚨 New Forensic Visitor';

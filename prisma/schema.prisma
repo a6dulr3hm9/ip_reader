@@ -10,6 +10,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model SharedLink {
+  id          String   @id @default(cuid())
+  senderEmail String
+  createdAt   DateTime @default(now())
+  logs        VisitorLog[]
+}
+
 model VisitorLog {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -37,9 +44,15 @@ model VisitorLog {
   // Device / Browser (Allowed fields)
   browser   String?
   os        String?
-  cpuArch   String? // Architecture is usually okay (e.g. arm64), but "cores" was explicitly banned.
+  cpuArch   String? 
   deviceType String?
   
   // Connection
   connectionType String?
+
+  // Tracking
+  linkId    String?
+  link      SharedLink? @relation(fields: [linkId], references: [id])
+  platform  String?
+  visitorEmail String? // Captured via optional lead form
 }

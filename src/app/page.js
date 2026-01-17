@@ -7,11 +7,43 @@ export default function Home() {
   const [clientData, setClientData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [systemId, setSystemId] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
+  const [generatedLink, setGeneratedLink] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [visitorEmail, setVisitorEmail] = useState('');
+  const [linkId, setLinkId] = useState(null);
 
   useEffect(() => {
     // Generate System ID once on mount
     setSystemId(Math.random().toString(36).substring(7).toUpperCase());
+
+    // Check for link tracking ID in URL
+    const params = new URLSearchParams(window.location.search);
+    const sid = params.get('sid');
+    if (sid) setLinkId(sid);
   }, []);
+
+  const handleGenerateLink = async (e) => {
+    e.preventDefault();
+    if (!senderEmail) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: senderEmail }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        // Build URL locally if NEXT_PUBLIC_BASE_URL is missing
+        const url = json.url || `${window.location.origin}/?sid=${json.linkId}`;
+        setGeneratedLink(url);
+      }
+    } catch (err) {
+      console.error('Failed to generate link', err);
+    }
+    setIsGenerating(false);
+  };
 
   useEffect(() => {
     // Only fetch data once, validation via check
@@ -98,7 +130,7 @@ export default function Home() {
         const logPayload = {
           systemId: systemId,
           ip: json.ip,
-          ipv4_fallback: json.ipv4 || 'N/A', // Log this too if schema permitted
+          ipv4_fallback: json.ipv4 || 'N/A',
           isp: json.isp,
           org: json.org,
           asn: json.asn,
@@ -115,7 +147,9 @@ export default function Home() {
           os: json.ua?.os,
           cpuArch: json.ua?.cpu,
           deviceType: json.ua?.device,
-          connectionType: cData.connection
+          connectionType: cData.connection,
+          linkId: linkId,
+          visitorEmail: visitorEmail // This will be updated if they fill the form later
         };
 
         console.log('Logging visit...', logPayload);
@@ -132,7 +166,25 @@ export default function Home() {
     };
 
     run();
-  }, [systemId]);
+  }, [systemId, linkId]); // Re-run if linkId changes (unlikely once set)
+
+  const handleVisitorLead = async (e) => {
+    e.preventDefault();
+    if (!visitorEmail) return;
+    try {
+      await fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemId,
+          linkId,
+          visitorEmail,
+          updateOnly: true // We can handle partial updates if we want, but for now just send again
+        })
+      });
+      alert('Identity Verified. Your forensic report is now unlocked.');
+    } catch (err) { }
+  };
 
   return (
     <main className="container">
@@ -264,8 +316,67 @@ export default function Home() {
               </div>
             </div>
 
+            {/* SEGMENT 5: SHARE & TRACK (FOR SENDER) */}
+            <div className="section-title">Share & Track (Sender)</div>
+            <div className="share-section">
+              <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
+                Generate a unique tracking link. When someone opens it, you'll receive their IP, location, and platform details via email.
+              </p>
+              {!generatedLink ? (
+                <form onSubmit={handleGenerateLink} style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="email"
+                    placeholder="Your email for alerts"
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                    required
+                    className="share-input"
+                  />
+                  <button type="submit" className="share-button" disabled={isGenerating}>
+                    {isGenerating ? 'GENERATING...' : 'GET TRACKING LINK'}
+                  </button>
+                </form>
+              ) : (
+                <div className="generated-link-box">
+                  <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '4px' }}>YOUR TRACKING LINK READY:</div>
+                  <div className="link-text" onClick={() => {
+                    navigator.clipboard.writeText(generatedLink);
+                    alert('Copied to clipboard!');
+                  }}>
+                    {generatedLink}
+                  </div>
+                  <p style={{ fontSize: '0.65rem', color: '#555', marginTop: '8px' }}>
+                    Share this on WhatsApp, Telegram, or X. We'll track the platform automatically.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* SEGMENT 6: IDENTITY VERIFICATION (FOR VISITORS VIA LINK) */}
+            {linkId && (
+              <div className="visitor-lead-capture" style={{ marginTop: '2rem', border: '1px solid #333', padding: '1.5rem', borderRadius: '8px', background: 'rgba(255, 77, 77, 0.05)' }}>
+                <div style={{ color: '#ff4d4d', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem' }}>⚠️ FORENSIC LOCK ACTIVE</div>
+                <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '1rem' }}>
+                  A tracking ID has been detected. To unlock the full identity resolution and clear these flags, please verify your session:
+                </p>
+                <form onSubmit={handleVisitorLead} style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="email"
+                    placeholder="Enter email to reveal report"
+                    value={visitorEmail}
+                    onChange={(e) => setVisitorEmail(e.target.value)}
+                    required
+                    className="share-input"
+                  />
+                  <button type="submit" className="share-button" style={{ background: '#ff4d4d', color: 'white' }}>
+                    UNLOCK REPORT
+                  </button>
+                </form>
+              </div>
+            )}
+
             <div style={{ marginTop: '3rem', textAlign: 'center', fontSize: '0.8rem', color: '#444', borderTop: '1px solid #222', paddingTop: '1rem' }}>
-              SYSTEM ID: {systemId} | SESSION: ENCRYPTED
+              SYSTEM ID: {systemId} | {linkId ? `TRACKING ID: ${linkId}` : 'SESSION: ENCRYPTED'}
             </div>
           </div>
         )}
